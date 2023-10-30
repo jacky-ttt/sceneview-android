@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
@@ -16,8 +17,9 @@ import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
-import io.github.sceneview.math.Position
-import io.github.sceneview.node.ModelNode
+import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.math.colorOf
+import io.github.sceneview.node.CubeNode
 import io.github.sceneview.sample.doOnApplyWindowInsets
 import io.github.sceneview.sample.setFullScreen
 import kotlinx.coroutines.launch
@@ -97,11 +99,20 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         }
                 }
             }
+            onTapAR = { _, _ ->
+                cubeNode?.let {
+                    it.updateGeometry(
+                        size = it.size * 0.5f
+                    )
+                }
+            }
             onTrackingFailureChanged = { reason ->
                 this@MainActivity.trackingFailureReason = reason
             }
         }
     }
+
+    var cubeNode: CubeNode? = null
 
     fun addAnchorNode(anchor: Anchor) {
         sceneView.addChildNode(
@@ -110,20 +121,16 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     isEditable = true
                     lifecycleScope.launch {
                         isLoading = true
-                        sceneView.modelLoader.loadModelInstance(
-                            "https://sceneview.github.io/assets/models/DamagedHelmet.glb"
-                        )?.let { modelInstance ->
-                            addChildNode(
-                                ModelNode(
-                                    modelInstance = modelInstance,
-                                    // Scale to fit in a 0.5 meters cube
-                                    scaleToUnits = 0.5f,
-                                    // Bottom origin instead of center so the model base is on floor
-                                    centerOrigin = Position(y = -0.5f)
-                                ).apply {
-                                    isEditable = true
-                                }
+                        cubeNode = CubeNode(
+                            engine = engine,
+                            materialInstance = MaterialLoader(
+                                engine = engine,
+                                context = this@MainActivity
+                            ).createColorMaterial(
+                                colorOf(Color.Cyan)
                             )
+                        ).also {
+                            addChildNode(it)
                         }
                         isLoading = false
                     }
